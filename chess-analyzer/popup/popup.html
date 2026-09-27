@@ -19,6 +19,9 @@
     <option value="strong" selected>Strong · 2000 ms</option>
     <option value="deep">Deep · 5000 ms</option>
   </select>
+  <label class="mode-label strength-label" for="skill-level"><span data-i18n="skillLevel">Mức phân tích</span> <output id="skill-value" for="skill-level">20 / 20</output></label>
+  <input id="skill-level" type="range" min="0" max="20" step="1" value="20" disabled>
+  <p class="strength-note" data-i18n="skillNote">Mức 0–19 giới hạn độ sâu; mức 20 dùng toàn bộ thời gian. Đây không phải phần trăm chính xác.</p>
   <label class="mode-label language-label" for="language" data-i18n="language">Ngôn ngữ</label>
   <select id="language" aria-label="Ngôn ngữ" disabled>
     <option value="vi">Tiếng Việt</option>

@@ -14,6 +14,10 @@ input[role="switch"]:checked::before { transform: translateX(19px); }
 :focus-visible { outline: 2px solid #57d6be; outline-offset: 3px; }
 .mode-label { display: block; margin-bottom: 8px; font-size: 13px; }
 .language-label { margin-top: 16px; }
+.strength-label { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+#skill-level { width: 100%; accent-color: #57d6be; cursor: pointer; }
+#skill-value { color: #57d6be; font-variant-numeric: tabular-nums; }
+.strength-note { color: #a0acbf; font-size: 11px; line-height: 1.5; margin: 6px 0 0; }
 select { width: 100%; padding: 10px; border: 1px solid #415066; border-radius: 8px; font: inherit; font-size: 13px; background: #1a2535; color: inherit; }
 :disabled { opacity: 0.5; cursor: wait; }
 .note, #status { color: #a0acbf; font-size: 12px; line-height: 1.6; }

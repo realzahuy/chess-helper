@@ -47,7 +47,7 @@ Content script không thể đọc trực tiếp biến JS của trang từ isol
 
 Worker chạy trong `panel.html` thuộc origin `chrome-extension://…`, tránh lỗi cross-origin khi tạo Worker từ origin Chess.com. Content script kết nối bằng MessageChannel, kiểm tra request/generation và FEN trước khi render.
 
-`chrome.storage.local` chỉ ghi `enabled`, `analysisMode`, `language` (`vi` hoặc `en`) và `panelPosition` nếu panel đã được kéo. `panelPosition` là hai tỷ lệ x/y nhỏ (0–1) để giữ vị trí sau khi tải lại trang và tự điều chỉnh khi cửa sổ đổi kích thước; nút **Về cạnh bàn cờ** xóa setting này. Chọn ngôn ngữ trong popup sẽ đổi ngay các nhãn và kết quả đang hiển thị ở panel, không chạy lại Stockfish. FEN, eval, PV và kết quả đang hiển thị chỉ tồn tại trong RAM; không có file trung gian, database, backend, REST API hoặc lịch sử. Giữ tối đa kết quả vị trí hiện tại để không chạy lại chỉ vì board được dựng lại hoặc lật. OFF xóa dữ liệu phân tích.
+`chrome.storage.local` chỉ ghi `enabled`, `analysisMode`, `skillLevel`, `language` (`vi` hoặc `en`) và `panelPosition` nếu panel đã được kéo. `skillLevel` là tên setting cũ để giữ lựa chọn khi nâng cấp: 0–19 hiện giới hạn độ sâu tìm kiếm (mức 0 = depth 2, mức 19 = depth 21), mức 20 dùng toàn bộ thời gian. Stockfish trả nước gợi ý, đánh giá và biến chính từ cùng lượt tìm kiếm; giảm mức có thể làm kết quả kém chính xác nhưng không đảm bảo mỗi vị trí đều khác. Khi đổi mức, extension xóa bảng hash cũ trước khi chạy lại để kết quả sâu không ảnh hưởng mức nông. `panelPosition` là hai tỷ lệ x/y nhỏ (0–1) để giữ vị trí sau khi tải lại trang và tự điều chỉnh khi cửa sổ đổi kích thước; nút **Về cạnh bàn cờ** xóa setting này. Chọn ngôn ngữ trong popup sẽ đổi ngay các nhãn và kết quả đang hiển thị ở panel, không chạy lại Stockfish. FEN, eval, PV và kết quả đang hiển thị chỉ tồn tại trong RAM; không có file trung gian, database, backend, REST API hoặc lịch sử. Giữ tối đa kết quả vị trí hiện tại để không chạy lại chỉ vì board được dựng lại hoặc lật. OFF xóa dữ liệu phân tích.
 
 ## Các bước và file
 
@@ -192,7 +192,7 @@ reader.getFen(board);
 Trong DevTools của popup (chuột phải popup → Inspect):
 
 ```js
-await chrome.storage.local.get(null); // enabled, analysisMode, language; panelPosition nếu đã di chuyển
+await chrome.storage.local.get(null); // enabled, analysisMode, skillLevel, language; panelPosition nếu đã di chuyển
 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 await chrome.tabs.sendMessage(tab.id, { type: 'ANALYZER_PING' });
 ```

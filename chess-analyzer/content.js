@@ -136,7 +136,7 @@
       } else if (message.type === 'status') setStatus(message.status);
       else if (['info', 'bestmove'].includes(message.type)) {
         const result = message.result;
-        if (!result || `${result.fen}|${settings.analysisMode}` !== lastKey) return;
+        if (!result || `${result.fen}|${settings.analysisMode}|${settings.skillLevel}` !== lastKey) return;
         send({ type: 'render', id: analysisId, result });
         if (message.type === 'bestmove') {
           running = false; lastResult = result;
@@ -246,8 +246,8 @@
       clearTimeout(retryTimer);
       overlay ??= new BoardOverlay(board, state.orientation, { onLayout: positionPanel });
       overlay.setOrientation(state.orientation);
-      const key = `${fen}|${settings.analysisMode}`;
-      send({ type: 'details', mode: settings.analysisMode, ms: MODES[settings.analysisMode] });
+      const key = `${fen}|${settings.analysisMode}|${settings.skillLevel}`;
+      send({ type: 'details', mode: settings.analysisMode, ms: MODES[settings.analysisMode], skill: settings.skillLevel });
       if (key === lastKey) {
         if (running) return;
         if (lastResult) {
@@ -258,7 +258,7 @@
       }
       invalidate(); lastKey = key; lastResult = null; running = true;
       setStatus('Đang phân tích…');
-      send({ type: 'analyze', id: analysisId, fen, mode: settings.analysisMode });
+      send({ type: 'analyze', id: analysisId, fen, mode: settings.analysisMode, skillLevel: settings.skillLevel });
     }
     function applySettings() {
       if (!settings.enabled || !reader.getPageScope().candidate) {
@@ -278,15 +278,15 @@
     window.addEventListener('pagehide', cleanup);
     window.addEventListener('pageshow', event => { if (event.persisted) void loadSettings(); });
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language && !changes.panelPosition)) return;
+      if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language && !changes.skillLevel && !changes.panelPosition)) return;
       revision++;
       if (changes.panelPosition) {
         panelPosition = normalizePanelPosition(changes.panelPosition.newValue);
         positionPanel(board?.getBoundingClientRect());
-        if (!changes.enabled && !changes.analysisMode && !changes.language) return;
+        if (!changes.enabled && !changes.analysisMode && !changes.language && !changes.skillLevel) return;
       }
-      if (changes.analysisMode) { invalidate(); lastKey = null; lastResult = null; }
-      for (const key of ['enabled', 'analysisMode', 'language']) if (changes[key]) settings[key] = changes[key].newValue;
+      if (changes.analysisMode || changes.skillLevel) { invalidate(); lastKey = null; lastResult = null; }
+      for (const key of ['enabled', 'analysisMode', 'language', 'skillLevel']) if (changes[key]) settings[key] = changes[key].newValue;
       settings = normalizeSettings(settings); applySettings();
     });
     async function loadSettings() {

@@ -1,11 +1,12 @@
 export const MODES = Object.freeze({ fast: 500, strong: 2000, deep: 5000 });
-export const DEFAULT_SETTINGS = Object.freeze({ enabled: false, analysisMode: 'strong', language: 'vi' });
+export const DEFAULT_SETTINGS = Object.freeze({ enabled: false, analysisMode: 'strong', language: 'vi', skillLevel: 20 });
 
 export function normalizeSettings(value = {}) {
   return {
     enabled: value.enabled === true,
     analysisMode: Object.hasOwn(MODES, value.analysisMode) ? value.analysisMode : 'strong',
     language: value.language === 'en' ? 'en' : 'vi',
+    skillLevel: Number.isInteger(value.skillLevel) && value.skillLevel >= 0 && value.skillLevel <= 20 ? value.skillLevel : 20,
   };
 }
 
@@ -15,6 +16,12 @@ export function normalizePanelPosition(value) {
       !Number.isFinite(value.x) || !Number.isFinite(value.y) ||
       value.x < 0 || value.x > 1 || value.y < 0 || value.y > 1) return null;
   return { x: value.x, y: value.y };
+}
+
+// Level 20 keeps the full time-limited search. Lower levels cap the same search.
+export function depthLimitForLevel(level) {
+  if (!Number.isInteger(level) || level < 0 || level > 20) throw new Error('Mức phân tích phải từ 0 đến 20.');
+  return level === 20 ? null : level + 2;
 }
 
 export function parseUciMove(move) {

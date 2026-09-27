@@ -3,6 +3,8 @@ import { t, localizeStatus } from '../i18n.js';
 
 const toggle = document.querySelector('#enabled');
 const mode = document.querySelector('#analysis-mode');
+const skill = document.querySelector('#skill-level');
+const skillValue = document.querySelector('#skill-value');
 const language = document.querySelector('#language');
 const stateLabel = document.querySelector('#state-label');
 const status = document.querySelector('#status');
@@ -63,6 +65,8 @@ chrome.tabs.onUpdated.addListener((tabId, change) => {
 function render() {
   toggle.checked = settings.enabled;
   mode.value = settings.analysisMode;
+  skill.value = settings.skillLevel;
+  skillValue.textContent = `${settings.skillLevel} / 20`;
   language.value = settings.language;
   document.documentElement.lang = settings.language;
   document.querySelector('#enabled').setAttribute('aria-label', t('toggleLabel', settings.language));
@@ -77,7 +81,7 @@ function render() {
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   revision += 1;
-  for (const key of ['enabled', 'analysisMode', 'language']) {
+  for (const key of ['enabled', 'analysisMode', 'language', 'skillLevel']) {
     if (changes[key]) settings[key] = changes[key].newValue;
   }
   settings = normalizeSettings(settings);
@@ -100,6 +104,8 @@ async function save(patch) {
 
 toggle.addEventListener('change', () => save({ enabled: toggle.checked }));
 mode.addEventListener('change', () => save({ analysisMode: mode.value }));
+skill.addEventListener('input', () => { skillValue.textContent = `${skill.value} / 20`; });
+skill.addEventListener('change', () => save({ skillLevel: Number(skill.value) }));
 language.addEventListener('change', () => save({ language: language.value }));
 
 try {
@@ -107,6 +113,6 @@ try {
   const saved = await chrome.storage.local.get(DEFAULT_SETTINGS);
   if (revision === initialRevision) settings = normalizeSettings(saved);
   render();
-  toggle.disabled = mode.disabled = language.disabled = false;
+  toggle.disabled = mode.disabled = language.disabled = skill.disabled = false;
   await connectToActiveTab();
 } catch (error) { status.textContent = t('settingsError', settings.language, { detail: error.message }); }

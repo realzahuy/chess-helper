@@ -7,7 +7,14 @@ let port = null, engine = null, currentId = null;
 let settings = { ...DEFAULT_SETTINGS };
 let revision = 0;
 let currentStatus = 'Đang kết nối…', currentResult = null, currentFen = null, currentDetails = null;
+let currentSkill = 20;
 const $ = id => document.getElementById(id);
+function renderStrengthNote() {
+  const reduced = currentSkill < 20 && Boolean(currentFen);
+  document.querySelector('[data-i18n="bestMove"]').textContent = t(reduced ? 'suggestedMove' : 'bestMove', settings.language);
+  $('strength-note').hidden = !reduced;
+  $('strength-note').textContent = reduced ? t('reducedSkill', settings.language) : '';
+}
 function renderLanguage() {
   document.documentElement.lang = settings.language;
   for (const element of document.querySelectorAll('[data-i18n]')) {
@@ -18,6 +25,7 @@ function renderLanguage() {
   $('reset-position').title = t('resetTitle', settings.language);
   $('status').textContent = localizeStatus(currentStatus, settings.language);
   if (currentDetails) $('details').textContent = t('engineDetails', settings.language, currentDetails);
+  renderStrengthNote();
   if (currentResult) render(currentResult);
   else if (currentFen) $('castling-rights').textContent = describeCastlingRights(currentFen, settings.language);
 }
@@ -30,6 +38,7 @@ function clear() {
   $('move-detail').textContent = '';
   currentResult = null;
   currentFen = null;
+  renderStrengthNote();
 }
 function stop(destroy = false) {
   currentId = null;
@@ -48,13 +57,17 @@ function render(result) {
   $('depth').textContent = result.depth ?? '—';
   $('evaluation').textContent = formatEvaluation(result.score, result.fen.split(' ')[1]);
   $('pv').textContent = formatPrincipalVariation(result.fen, result.pv);
+  renderStrengthNote();
 }
 async function analyze(message) {
-  if (!settings.enabled || !Number.isSafeInteger(message.id) || !Object.hasOwn(MODES, message.mode)) return;
+  if (!settings.enabled || !Number.isSafeInteger(message.id) || !Object.hasOwn(MODES, message.mode) ||
+      !Number.isInteger(message.skillLevel) || message.skillLevel < 0 || message.skillLevel > 20) return;
   currentId = message.id;
   clear();
+  currentSkill = message.skillLevel;
   currentFen = message.fen;
   $('castling-rights').textContent = describeCastlingRights(message.fen, settings.language);
+  renderStrengthNote();
   if (!engine) {
     const instance = new StockfishEngine({
       onInfo: result => { if (engine === instance) send({ type: 'info', id: currentId, result }); },
@@ -69,7 +82,7 @@ async function analyze(message) {
     engine = instance;
   }
   try {
-    const result = await engine.analyze(message.fen, message.mode);
+    const result = await engine.analyze(message.fen, message.mode, message.skillLevel);
     if (settings.enabled && currentId === message.id) send({ type: 'bestmove', id: message.id, result });
   } catch (error) {
     if (error.name !== 'AbortError' && currentId === message.id) {
@@ -90,6 +103,7 @@ window.addEventListener('message', event => {
     if (data?.type === 'render' && data.id === currentId && settings.enabled) render(data.result);
     if (data?.type === 'restore' && settings.enabled && Number.isSafeInteger(data.id)) {
       currentId = data.id;
+      currentSkill = settings.skillLevel;
       render(data.result);
     }
     if (data?.type === 'details') {
@@ -100,9 +114,9 @@ window.addEventListener('message', event => {
   send({ type: 'ready' });
 });
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language)) return;
+  if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language && !changes.skillLevel)) return;
   revision++;
-  for (const key of ['enabled', 'analysisMode', 'language']) if (changes[key]) settings[key] = changes[key].newValue;
+  for (const key of ['enabled', 'analysisMode', 'language', 'skillLevel']) if (changes[key]) settings[key] = changes[key].newValue;
   settings = normalizeSettings(settings);
   if (!settings.enabled) { stop(true); setStatus('OFF'); }
   renderLanguage();
