@@ -94,6 +94,7 @@ const englishStatuses = new Map([
   ['Không có FEN đầy đủ từ state/thuộc tính board. Không suy đoán lượt, nhập thành hoặc en passant.', 'The board does not provide a complete FEN. Turn, castling rights, and en passant will not be guessed.'],
   ['Không đọc được state của Chess.com.', 'Could not read the Chess.com board state.'],
   ['Không đọc được settings.', 'Could not read settings.'],
+  ['Không lưu được vị trí panel.', 'Could not save the panel position.'],
 ]);
 
 export function localizeStatus(value, language = 'vi') {

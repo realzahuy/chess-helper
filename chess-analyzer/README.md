@@ -47,7 +47,7 @@ Content script không thể đọc trực tiếp biến JS của trang từ isol
 
 Worker chạy trong `panel.html` thuộc origin `chrome-extension://…`, tránh lỗi cross-origin khi tạo Worker từ origin Chess.com. Content script kết nối bằng MessageChannel, kiểm tra request/generation và FEN trước khi render.
 
-`chrome.storage.local` chỉ ghi `enabled`, `analysisMode` và `language` (`vi` hoặc `en`). Chọn ngôn ngữ trong popup sẽ đổi ngay các nhãn và kết quả đang hiển thị ở panel, không chạy lại Stockfish. FEN, eval, PV và kết quả đang hiển thị chỉ tồn tại trong RAM; không có file trung gian, database, backend, REST API hoặc lịch sử. Giữ tối đa kết quả vị trí hiện tại để không chạy lại chỉ vì board được dựng lại hoặc lật. OFF xóa dữ liệu đó.
+`chrome.storage.local` chỉ ghi `enabled`, `analysisMode`, `language` (`vi` hoặc `en`) và `panelPosition` nếu panel đã được kéo. `panelPosition` là hai tỷ lệ x/y nhỏ (0–1) để giữ vị trí sau khi tải lại trang và tự điều chỉnh khi cửa sổ đổi kích thước; nút **Về cạnh bàn cờ** xóa setting này. Chọn ngôn ngữ trong popup sẽ đổi ngay các nhãn và kết quả đang hiển thị ở panel, không chạy lại Stockfish. FEN, eval, PV và kết quả đang hiển thị chỉ tồn tại trong RAM; không có file trung gian, database, backend, REST API hoặc lịch sử. Giữ tối đa kết quả vị trí hiện tại để không chạy lại chỉ vì board được dựng lại hoặc lật. OFF xóa dữ liệu phân tích.
 
 ## Các bước và file
 
@@ -133,7 +133,7 @@ overlay.destroy();
 - Giữ chuột ở tiêu đề **Chess Analyzer / KÉO ĐỂ DI CHUYỂN** rồi kéo panel đến vị trí mong muốn. Hỗ trợ pointer capture để kéo vượt khỏi vùng iframe.
 - Khi tiêu đề được focus bằng Tab, dùng phím mũi tên để dịch 10 px; Shift + mũi tên dịch 40 px.
 - Nút **Về cạnh bàn cờ** khôi phục vị trí tự động. Panel được giới hạn trong cửa sổ, tiêu đề luôn ở ngoài vùng cuộn nội dung để dễ kéo.
-- Vị trí kéo được giữ trong RAM của tab qua các lần board cập nhật, flip, scroll và OFF/ON; reload tab sẽ về mặc định. Không thêm dữ liệu analysis hoặc vị trí panel vào storage.
+- Vị trí kéo được lưu vào `chrome.storage.local` sau khi thả chuột hoặc dùng phím mũi tên; tải lại tab, bật/tắt extension hoặc khởi động lại Chrome vẫn giữ vị trí. Vị trí tính theo tỷ lệ cửa sổ để panel không ra ngoài màn hình khi đổi kích thước. Không lưu FEN hay kết quả phân tích.
 - **Quyền nhập thành từ FEN** cho biết quyền còn lại cho Trắng/Đen. Ví dụ `Trắng: O-O, O-O-O` nghĩa là chưa mất hai quyền đó, không khẳng định cả hai nước đều hợp lệ ngay bây giờ.
 - Đường đi còn quân, vua đang bị chiếu, hoặc ô vua đi qua/đến bị tấn công vẫn ngăn nhập thành. Stockfish xét các điều kiện hợp lệ khi chọn bestmove; dòng quyền không phải một khuyến nghị nhập thành.
 
@@ -192,7 +192,7 @@ reader.getFen(board);
 Trong DevTools của popup (chuột phải popup → Inspect):
 
 ```js
-await chrome.storage.local.get(null); // chỉ enabled, analysisMode, language nếu đã chọn
+await chrome.storage.local.get(null); // enabled, analysisMode, language; panelPosition nếu đã di chuyển
 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 await chrome.tabs.sendMessage(tab.id, { type: 'ANALYZER_PING' });
 ```

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chess Analyzer — Local Stockfish",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Local Stockfish analysis for Chess.com boards / Phân tích bàn cờ Chess.com bằng Stockfish local.",
   "minimum_chrome_version": "120",
   "permissions": ["storage"],

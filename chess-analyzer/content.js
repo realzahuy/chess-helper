@@ -27,7 +27,7 @@
     console.error('[Chess Analyzer] Khởi tạo thất bại:', error);
   });
   async function start() {
-    const [{ BoardOverlay }, { DEFAULT_SETTINGS, MODES, normalizeSettings, validateFen, debounce }] = await Promise.all([
+    const [{ BoardOverlay }, { DEFAULT_SETTINGS, MODES, normalizeSettings, normalizePanelPosition, validateFen, debounce }] = await Promise.all([
       import(chrome.runtime.getURL('overlay.js')), import(chrome.runtime.getURL('utils.js')),
       import(chrome.runtime.getURL('board-reader.js')),
     ]);
@@ -38,7 +38,7 @@
     let lastKey = null, lastResult = null, running = false, fault = false;
     let retryTimer, panelTimer, retryIndex = 0, currentUrl = location.href;
     let status = 'Đang chờ bàn cờ…';
-    let panelPosition = null, dragStart = null; // UI coordinates only, kept in RAM for this tab.
+    let panelPosition = null, dragStart = null, positionWrite = Promise.resolve();
     getDiagnostics = () => ({ enabled: settings.enabled, observing: Boolean(observer),
       boardFound: reader.isVisibleBoard(board), searching: running, panelReady: ready, status,
       pageSupported: reader.getPageScope().candidate });
@@ -46,6 +46,14 @@
     const scheduleRead = debounce(() => void readCurrent(), 200);
     const send = message => { if (ready) port?.postMessage(message); };
     const setStatus = text => { status = text; send({ type: 'status', status }); publishDiagnostics(); };
+    function persistPanelPosition() {
+      const position = panelPosition ? { ...panelPosition } : null;
+      positionWrite = positionWrite.catch(() => {}).then(() => position
+        ? chrome.storage.local.set({ panelPosition: position })
+        : chrome.storage.local.remove('panelPosition'))
+        .catch(error => { console.error('[Chess Analyzer] Could not save panel position:', error);
+          setStatus('Không lưu được vị trí panel.'); });
+    }
 
     function positionPanel(rect) {
       if (!frame) return;
@@ -53,12 +61,15 @@
       frame.style.width = `${width}px`;
       const height = frame.getBoundingClientRect().height;
       const beside = rect && rect.right + width + 24 <= innerWidth;
-      const desired = panelPosition || (rect
+      const availableX = Math.max(0, innerWidth - width - 24);
+      const availableY = Math.max(0, innerHeight - height - 24);
+      const desired = panelPosition
+        ? { x: 12 + panelPosition.x * availableX, y: 12 + panelPosition.y * availableY }
+        : (rect
         ? { x: beside ? rect.right + 12 : rect.left, y: beside ? rect.top : rect.bottom + 12 }
         : { x: innerWidth - width - 16, y: 16 });
-      const x = Math.max(12, Math.min(desired.x, innerWidth - width - 12));
-      const y = Math.max(12, Math.min(desired.y, innerHeight - height - 12));
-      if (panelPosition) panelPosition = { x, y };
+      const x = Math.max(12, Math.min(desired.x, 12 + availableX));
+      const y = Math.max(12, Math.min(desired.y, 12 + availableY));
       frame.style.left = `${x}px`;
       frame.style.top = `${y}px`;
       frame.style.right = 'auto';
@@ -66,12 +77,21 @@
     function movePanel(message) {
       if (!frame) return;
       const rect = frame.getBoundingClientRect();
-      if (message.type === 'panel-reset') { panelPosition = null; dragStart = null; }
+      if (message.type === 'panel-reset') { panelPosition = null; dragStart = null; persistPanelPosition(); }
       else if (message.type === 'panel-drag-start') dragStart = { x: rect.left, y: rect.top };
-      else if (message.type === 'panel-drag-end') dragStart = null;
+      else if (message.type === 'panel-drag-end') { dragStart = null; if (panelPosition) persistPanelPosition(); }
       else if (Number.isFinite(message.dx) && Number.isFinite(message.dy)) {
         const start = message.type === 'panel-nudge' ? { x: rect.left, y: rect.top } : dragStart;
-        if (start) panelPosition = { x: start.x + message.dx, y: start.y + message.dy };
+        if (start) {
+          const width = Math.max(1, Math.min(300, innerWidth - 24));
+          const availableX = Math.max(0, innerWidth - width - 24);
+          const availableY = Math.max(0, innerHeight - rect.height - 24);
+          panelPosition = {
+            x: availableX ? Math.max(0, Math.min((start.x + message.dx - 12) / availableX, 1)) : 0,
+            y: availableY ? Math.max(0, Math.min((start.y + message.dy - 12) / availableY, 1)) : 0,
+          };
+          if (message.type === 'panel-nudge') persistPanelPosition();
+        }
       }
       positionPanel(board?.getBoundingClientRect());
     }
@@ -258,16 +278,22 @@
     window.addEventListener('pagehide', cleanup);
     window.addEventListener('pageshow', event => { if (event.persisted) void loadSettings(); });
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language)) return;
+      if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language && !changes.panelPosition)) return;
       revision++;
+      if (changes.panelPosition) {
+        panelPosition = normalizePanelPosition(changes.panelPosition.newValue);
+        positionPanel(board?.getBoundingClientRect());
+        if (!changes.enabled && !changes.analysisMode && !changes.language) return;
+      }
       if (changes.analysisMode) { invalidate(); lastKey = null; lastResult = null; }
       for (const key of ['enabled', 'analysisMode', 'language']) if (changes[key]) settings[key] = changes[key].newValue;
       settings = normalizeSettings(settings); applySettings();
     });
     async function loadSettings() {
       const initialRevision = revision;
-      const saved = await chrome.storage.local.get(DEFAULT_SETTINGS);
+      const saved = await chrome.storage.local.get({ ...DEFAULT_SETTINGS, panelPosition: null });
       if (revision !== initialRevision) return;
+      panelPosition = normalizePanelPosition(saved.panelPosition);
       settings = normalizeSettings(saved); applySettings();
     }
     await loadSettings();

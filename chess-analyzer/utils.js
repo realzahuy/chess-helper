@@ -9,6 +9,14 @@ export function normalizeSettings(value = {}) {
   };
 }
 
+// Normalized viewport coordinates keep the panel visible across window sizes.
+export function normalizePanelPosition(value) {
+  if (!value || typeof value !== 'object' ||
+      !Number.isFinite(value.x) || !Number.isFinite(value.y) ||
+      value.x < 0 || value.x > 1 || value.y < 0 || value.y > 1) return null;
+  return { x: value.x, y: value.y };
+}
+
 export function parseUciMove(move) {
   if (typeof move !== 'string' || !/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move)) return null;
   const from = move.slice(0, 2);
