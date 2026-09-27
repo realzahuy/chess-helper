@@ -27,7 +27,7 @@
     console.error('[Chess Analyzer] Khởi tạo thất bại:', error);
   });
   async function start() {
-    const [{ BoardOverlay }, { DEFAULT_SETTINGS, MODES, normalizeSettings, normalizePanelPosition, validateFen, debounce }] = await Promise.all([
+    const [{ BoardOverlay }, { DEFAULT_SETTINGS, normalizeSettings, normalizePanelPosition, validateFen, debounce }] = await Promise.all([
       import(chrome.runtime.getURL('overlay.js')), import(chrome.runtime.getURL('utils.js')),
       import(chrome.runtime.getURL('board-reader.js')),
     ]);
@@ -122,6 +122,15 @@
     }
     function handleEngineMessage(message) {
       if (!settings.enabled) return;
+      if (message?.type === 'panel-size') {
+        if (!frame || !Number.isFinite(message.height)) return;
+        const height = Math.max(180, Math.min(Math.ceil(message.height), 1200));
+        if (frame.style.height !== `${height}px`) {
+          frame.style.height = `${height}px`;
+          positionPanel(board?.getBoundingClientRect());
+        }
+        return;
+      }
       if (['panel-drag-start', 'panel-drag', 'panel-drag-end', 'panel-nudge', 'panel-reset'].includes(message?.type)) {
         movePanel(message); return;
       }
@@ -136,7 +145,7 @@
       } else if (message.type === 'status') setStatus(message.status);
       else if (['info', 'bestmove'].includes(message.type)) {
         const result = message.result;
-        if (!result || `${result.fen}|${settings.analysisMode}|${settings.skillLevel}` !== lastKey) return;
+        if (!result || `${result.fen}|${settings.analysisMode}` !== lastKey) return;
         send({ type: 'render', id: analysisId, result });
         if (message.type === 'bestmove') {
           running = false; lastResult = result;
@@ -246,8 +255,7 @@
       clearTimeout(retryTimer);
       overlay ??= new BoardOverlay(board, state.orientation, { onLayout: positionPanel });
       overlay.setOrientation(state.orientation);
-      const key = `${fen}|${settings.analysisMode}|${settings.skillLevel}`;
-      send({ type: 'details', mode: settings.analysisMode, ms: MODES[settings.analysisMode], skill: settings.skillLevel });
+      const key = `${fen}|${settings.analysisMode}`;
       if (key === lastKey) {
         if (running) return;
         if (lastResult) {
@@ -258,7 +266,7 @@
       }
       invalidate(); lastKey = key; lastResult = null; running = true;
       setStatus('Đang phân tích…');
-      send({ type: 'analyze', id: analysisId, fen, mode: settings.analysisMode, skillLevel: settings.skillLevel });
+      send({ type: 'analyze', id: analysisId, fen, mode: settings.analysisMode });
     }
     function applySettings() {
       if (!settings.enabled || !reader.getPageScope().candidate) {
@@ -278,15 +286,15 @@
     window.addEventListener('pagehide', cleanup);
     window.addEventListener('pageshow', event => { if (event.persisted) void loadSettings(); });
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language && !changes.skillLevel && !changes.panelPosition)) return;
+      if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language && !changes.panelPosition)) return;
       revision++;
       if (changes.panelPosition) {
         panelPosition = normalizePanelPosition(changes.panelPosition.newValue);
         positionPanel(board?.getBoundingClientRect());
-        if (!changes.enabled && !changes.analysisMode && !changes.language && !changes.skillLevel) return;
+        if (!changes.enabled && !changes.analysisMode && !changes.language) return;
       }
-      if (changes.analysisMode || changes.skillLevel) { invalidate(); lastKey = null; lastResult = null; }
-      for (const key of ['enabled', 'analysisMode', 'language', 'skillLevel']) if (changes[key]) settings[key] = changes[key].newValue;
+      if (changes.analysisMode) { invalidate(); lastKey = null; lastResult = null; }
+      for (const key of ['enabled', 'analysisMode', 'language']) if (changes[key]) settings[key] = changes[key].newValue;
       settings = normalizeSettings(settings); applySettings();
     });
     async function loadSettings() {

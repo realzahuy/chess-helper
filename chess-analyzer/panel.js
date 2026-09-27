@@ -6,14 +6,20 @@ import { t, localizeStatus } from './i18n.js';
 let port = null, engine = null, currentId = null;
 let settings = { ...DEFAULT_SETTINGS };
 let revision = 0;
-let currentStatus = 'Đang kết nối…', currentResult = null, currentFen = null, currentDetails = null;
-let currentSkill = 20;
+let currentStatus = 'Đang kết nối…', currentResult = null, currentFen = null;
 const $ = id => document.getElementById(id);
-function renderStrengthNote() {
-  const reduced = currentSkill < 20 && Boolean(currentFen);
-  document.querySelector('[data-i18n="bestMove"]').textContent = t(reduced ? 'suggestedMove' : 'bestMove', settings.language);
-  $('strength-note').hidden = !reduced;
-  $('strength-note').textContent = reduced ? t('reducedSkill', settings.language) : '';
+let sizeFrame = null;
+function schedulePanelSize() {
+  if (sizeFrame !== null) return;
+  sizeFrame = requestAnimationFrame(() => {
+    sizeFrame = null;
+    const header = document.querySelector('header');
+    const mainStyle = getComputedStyle(document.querySelector('main'));
+    const contentHeight = $('panel-content').getBoundingClientRect().height;
+    const height = Math.ceil(header.getBoundingClientRect().height + contentHeight +
+      parseFloat(mainStyle.paddingTop) + parseFloat(mainStyle.paddingBottom) + 2);
+    if (height > 0) send({ type: 'panel-size', height });
+  });
 }
 function renderLanguage() {
   document.documentElement.lang = settings.language;
@@ -24,21 +30,21 @@ function renderLanguage() {
   $('drag-handle').title = t('dragTitle', settings.language);
   $('reset-position').title = t('resetTitle', settings.language);
   $('status').textContent = localizeStatus(currentStatus, settings.language);
-  if (currentDetails) $('details').textContent = t('engineDetails', settings.language, currentDetails);
-  renderStrengthNote();
   if (currentResult) render(currentResult);
   else if (currentFen) $('castling-rights').textContent = describeCastlingRights(currentFen, settings.language);
+  schedulePanelSize();
 }
 function setStatus(value) {
   currentStatus = value;
   $('status').textContent = localizeStatus(value, settings.language);
+  schedulePanelSize();
 }
 function clear() {
   for (const id of ['best-move', 'evaluation', 'depth', 'pv', 'castling-rights']) $(id).textContent = '—';
   $('move-detail').textContent = '';
   currentResult = null;
   currentFen = null;
-  renderStrengthNote();
+  schedulePanelSize();
 }
 function stop(destroy = false) {
   currentId = null;
@@ -57,17 +63,15 @@ function render(result) {
   $('depth').textContent = result.depth ?? '—';
   $('evaluation').textContent = formatEvaluation(result.score, result.fen.split(' ')[1]);
   $('pv').textContent = formatPrincipalVariation(result.fen, result.pv);
-  renderStrengthNote();
+  schedulePanelSize();
 }
 async function analyze(message) {
-  if (!settings.enabled || !Number.isSafeInteger(message.id) || !Object.hasOwn(MODES, message.mode) ||
-      !Number.isInteger(message.skillLevel) || message.skillLevel < 0 || message.skillLevel > 20) return;
+  if (!settings.enabled || !Number.isSafeInteger(message.id) || !Object.hasOwn(MODES, message.mode)) return;
   currentId = message.id;
   clear();
-  currentSkill = message.skillLevel;
   currentFen = message.fen;
   $('castling-rights').textContent = describeCastlingRights(message.fen, settings.language);
-  renderStrengthNote();
+  schedulePanelSize();
   if (!engine) {
     const instance = new StockfishEngine({
       onInfo: result => { if (engine === instance) send({ type: 'info', id: currentId, result }); },
@@ -82,7 +86,7 @@ async function analyze(message) {
     engine = instance;
   }
   try {
-    const result = await engine.analyze(message.fen, message.mode, message.skillLevel);
+    const result = await engine.analyze(message.fen, message.mode);
     if (settings.enabled && currentId === message.id) send({ type: 'bestmove', id: message.id, result });
   } catch (error) {
     if (error.name !== 'AbortError' && currentId === message.id) {
@@ -103,20 +107,17 @@ window.addEventListener('message', event => {
     if (data?.type === 'render' && data.id === currentId && settings.enabled) render(data.result);
     if (data?.type === 'restore' && settings.enabled && Number.isSafeInteger(data.id)) {
       currentId = data.id;
-      currentSkill = settings.skillLevel;
       render(data.result);
-    }
-    if (data?.type === 'details') {
-      currentDetails = data;
-      $('details').textContent = t('engineDetails', settings.language, data);
     }
   };
   send({ type: 'ready' });
+  schedulePanelSize();
 });
+window.addEventListener('resize', schedulePanelSize);
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language && !changes.skillLevel)) return;
+  if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language)) return;
   revision++;
-  for (const key of ['enabled', 'analysisMode', 'language', 'skillLevel']) if (changes[key]) settings[key] = changes[key].newValue;
+  for (const key of ['enabled', 'analysisMode', 'language']) if (changes[key]) settings[key] = changes[key].newValue;
   settings = normalizeSettings(settings);
   if (!settings.enabled) { stop(true); setStatus('OFF'); }
   renderLanguage();

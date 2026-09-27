@@ -21,7 +21,7 @@ Chess Analyzer is a Chrome extension that shows Stockfish's suggested move as an
 
 1. Open a chessboard on Chess.com. Reload the tab once if it was open before installation.
 2. Open the **Chess Analyzer** popup and switch it **ON**.
-3. Choose **Fast**, **Strong**, or **Deep**, then set the **Analysis level** from 0 to 20. Levels 0–19 limit search depth, so the suggested move, evaluation, and best line come from that level. Level 20 uses the full time limit. This is not an accuracy percentage.
+3. Choose **Fast**, **Strong**, or **Deep**. The analysis panel and arrow update automatically.
 4. Drag the panel by its heading to move it. The position is remembered after reloading the page. Select **Beside board** to clear the saved position.
 5. Select **Language → English** or **Tiếng Việt** in the popup. The panel updates immediately and remembers your choice.
 6. Switch **OFF** to stop analysis and clear the arrow.
@@ -55,7 +55,7 @@ Chess Analyzer là Chrome Extension hiển thị nước đi Stockfish gợi ý 
 
 1. Mở một bàn cờ trên Chess.com. Nếu tab đã mở trước khi cài extension, hãy tải lại tab một lần.
 2. Mở popup **Chess Analyzer** và bật **ON**.
-3. Chọn **Fast**, **Strong** hoặc **Deep**, rồi đặt **Mức phân tích** từ 0 đến 20. Mức 0–19 giới hạn độ sâu để nước gợi ý, đánh giá và biến chính đến từ cùng mức tìm kiếm. Mức 20 dùng toàn bộ thời gian. Đây không phải phần trăm chính xác.
+3. Chọn **Fast**, **Strong** hoặc **Deep**. Panel và mũi tên tự cập nhật.
 4. Kéo tiêu đề panel để đổi vị trí. Vị trí được giữ sau khi tải lại trang; bấm **Về cạnh bàn cờ** để xóa vị trí đã lưu.
 5. Chọn **Ngôn ngữ → Tiếng Việt** hoặc **English** trong popup. Panel đổi ngay và ghi nhớ lựa chọn.
 6. Tắt **OFF** để dừng phân tích và xóa mũi tên.

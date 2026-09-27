@@ -1,4 +1,4 @@
-import { MODES, depthLimitForLevel, parseUciMove, validateFen } from './utils.js';
+import { MODES, parseUciMove, validateFen } from './utils.js';
 
 const aborted = () => new DOMException('Lượt phân tích đã bị hủy.', 'AbortError');
 
@@ -34,7 +34,6 @@ export class StockfishEngine {
     this.initializing = null;
     this.destroyed = false;
     this.threadMax = 1;
-    this.lastDepthLimit = null;
   }
 
   initialize() {
@@ -84,12 +83,11 @@ export class StockfishEngine {
     this.onState('Stockfish sẵn sàng');
   }
 
-  analyze(input, mode = 'strong', skillLevel = 20) {
-    let fen, depthLimit;
+  analyze(input, mode = 'strong') {
+    let fen;
     try {
       fen = validateFen(input).fen;
       if (!Object.hasOwn(MODES, mode)) throw new Error('Analysis mode không hợp lệ.');
-      depthLimit = depthLimitForLevel(skillLevel);
       if (this.destroyed) throw new Error('Engine đã đóng.');
     } catch (error) { return Promise.reject(error); }
     this._invalidate();
@@ -105,11 +103,6 @@ export class StockfishEngine {
       if (!this._current(request)) return;
       await this._stopSearch();
       if (!this._current(request)) return;
-      if (depthLimit !== this.lastDepthLimit) {
-        // Avoid reusing full-depth transposition entries for a shallower level.
-        this._send('setoption name Clear Hash');
-        this.lastDepthLimit = depthLimit;
-      }
       await this._commandUntil('isready', 'readyok');
       if (!this._current(request)) return;
       let finish;
@@ -122,7 +115,7 @@ export class StockfishEngine {
       };
       this.onState('Đang phân tích…');
       this._send(`position fen ${fen}`);
-      this._send(`go movetime ${MODES[mode]}${depthLimit === null ? '' : ` depth ${depthLimit}`}`);
+      this._send(`go movetime ${MODES[mode]}`);
     }).catch(error => {
       this._settle(request, error);
       if (!this.destroyed) this._fail(error);
