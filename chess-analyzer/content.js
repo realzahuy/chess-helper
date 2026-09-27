@@ -112,7 +112,7 @@
           message?.id !== analysisId) return;
       if (message.type === 'error') {
         fault = true; invalidate(true);
-        setStatus(`Lỗi engine: ${message.message}. Hãy tắt rồi bật lại.`);
+        setStatus(`Lỗi engine: ${String(message.message || 'Unknown error').replace(/\.+$/, '')}. Hãy tắt rồi bật lại.`);
       } else if (message.type === 'status') setStatus(message.status);
       else if (['info', 'bestmove'].includes(message.type)) {
         const result = message.result;
@@ -227,7 +227,7 @@
       overlay ??= new BoardOverlay(board, state.orientation, { onLayout: positionPanel });
       overlay.setOrientation(state.orientation);
       const key = `${fen}|${settings.analysisMode}`;
-      send({ type: 'details', text: `${settings.analysisMode} · ${MODES[settings.analysisMode]} ms · Hash 64 MB · 1 thread` });
+      send({ type: 'details', mode: settings.analysisMode, ms: MODES[settings.analysisMode] });
       if (key === lastKey) {
         if (running) return;
         if (lastResult) {
@@ -258,10 +258,10 @@
     window.addEventListener('pagehide', cleanup);
     window.addEventListener('pageshow', event => { if (event.persisted) void loadSettings(); });
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area !== 'local' || (!changes.enabled && !changes.analysisMode)) return;
+      if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language)) return;
       revision++;
       if (changes.analysisMode) { invalidate(); lastKey = null; lastResult = null; }
-      for (const key of ['enabled', 'analysisMode']) if (changes[key]) settings[key] = changes[key].newValue;
+      for (const key of ['enabled', 'analysisMode', 'language']) if (changes[key]) settings[key] = changes[key].newValue;
       settings = normalizeSettings(settings); applySettings();
     });
     async function loadSettings() {

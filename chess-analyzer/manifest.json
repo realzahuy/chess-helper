@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Chess Analyzer — Local Stockfish",
-  "version": "0.4.1",
-  "description": "Phân tích realtime bàn cờ Chess.com, kể cả ván online đang diễn ra, bằng Stockfish WASM local.",
+  "version": "0.5.0",
+  "description": "Local Stockfish analysis for Chess.com boards / Phân tích bàn cờ Chess.com bằng Stockfish local.",
   "minimum_chrome_version": "120",
   "permissions": ["storage"],
   "cross_origin_embedder_policy": { "value": "require-corp" },
@@ -23,7 +23,7 @@
     "run_at": "document_idle"
   }],
   "web_accessible_resources": [{
-    "resources": ["panel.html", "overlay.js", "utils.js", "board-reader.js"],
+    "resources": ["panel.html", "overlay.js", "utils.js", "i18n.js", "board-reader.js"],
     "matches": ["https://www.chess.com/*"]
   }],
   "content_security_policy": {

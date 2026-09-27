@@ -1,10 +1,11 @@
 export const MODES = Object.freeze({ fast: 500, strong: 2000, deep: 5000 });
-export const DEFAULT_SETTINGS = Object.freeze({ enabled: false, analysisMode: 'strong' });
+export const DEFAULT_SETTINGS = Object.freeze({ enabled: false, analysisMode: 'strong', language: 'vi' });
 
 export function normalizeSettings(value = {}) {
   return {
     enabled: value.enabled === true,
     analysisMode: Object.hasOwn(MODES, value.analysisMode) ? value.analysisMode : 'strong',
+    language: value.language === 'en' ? 'en' : 'vi',
   };
 }
 

@@ -1,4 +1,5 @@
 import { parseUciMove, validateFen } from './utils.js';
+import { t } from './i18n.js';
 
 const CASTLES = {
   e1g1: { king: 'K', right: 'K', rook: 'R', rookFrom: 'h1', rookTo: 'f1', notation: 'O-O', side: 'cánh vua' },
@@ -14,23 +15,26 @@ function castleFor(move, pieces, rights) {
     pieces.get(castle.rookFrom) === castle.rook && rights.includes(castle.right) ? castle : null;
 }
 
-export function describeMove(fen, uci) {
+export function describeMove(fen, uci, language = 'vi') {
   const move = parseUciMove(uci);
   if (!move) return { label: '—', detail: '' };
   const { pieces } = validateFen(fen);
   const castle = castleFor(move, pieces, fen.split(/\s+/)[2]);
   if (castle) return {
-    label: `${castle.notation} · Nhập thành ${castle.side}`,
-    detail: `Vua ${move.from} → ${move.to}; xe ${castle.rookFrom} → ${castle.rookTo}. Mũi tên chỉ nước đi của vua.`,
+    label: t('castleBest', language, { notation: castle.notation,
+      side: t(castle.side === 'cánh vua' ? 'kingSide' : 'queenSide', language) }),
+    detail: t('castleDetail', language, { kingFrom: move.from, kingTo: move.to,
+      rookFrom: castle.rookFrom, rookTo: castle.rookTo }),
   };
   return { label: `${move.from} → ${move.to}${move.promotion ? ` = ${move.promotion.toUpperCase()}` : ''}`, detail: '' };
 }
 
-export function describeCastlingRights(fen) {
+export function describeCastlingRights(fen, language = 'vi') {
   validateFen(fen);
   const rights = fen.trim().split(/\s+/)[2];
-  const side = (king, queen) => [rights.includes(king) && 'O-O', rights.includes(queen) && 'O-O-O'].filter(Boolean).join(', ') || 'không còn quyền';
-  return `Trắng: ${side('K', 'Q')} · Đen: ${side('k', 'q')}`;
+  const side = (king, queen) => [rights.includes(king) && 'O-O', rights.includes(queen) && 'O-O-O'].filter(Boolean).join(', ') || t('noRights', language);
+  return t('rightsSummary', language, { white: t('white', language), whiteRights: side('K', 'Q'),
+    black: t('black', language), blackRights: side('k', 'q') });
 }
 
 // Replay engine-supplied UCI only for display. This is not a legal-move validator.

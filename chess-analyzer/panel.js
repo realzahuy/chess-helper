@@ -1,14 +1,35 @@
 import { StockfishEngine } from './engine.js';
 import { DEFAULT_SETTINGS, MODES, normalizeSettings, formatEvaluation } from './utils.js';
 import { describeMove, describeCastlingRights, formatPrincipalVariation } from './move-display.js';
+import { t, localizeStatus } from './i18n.js';
 
 let port = null, engine = null, currentId = null;
 let settings = { ...DEFAULT_SETTINGS };
 let revision = 0;
+let currentStatus = 'Đang kết nối…', currentResult = null, currentFen = null, currentDetails = null;
 const $ = id => document.getElementById(id);
+function renderLanguage() {
+  document.documentElement.lang = settings.language;
+  for (const element of document.querySelectorAll('[data-i18n]')) {
+    element.textContent = t(element.dataset.i18n, settings.language);
+  }
+  $('drag-handle').setAttribute('aria-label', t('dragLabel', settings.language));
+  $('drag-handle').title = t('dragTitle', settings.language);
+  $('reset-position').title = t('resetTitle', settings.language);
+  $('status').textContent = localizeStatus(currentStatus, settings.language);
+  if (currentDetails) $('details').textContent = t('engineDetails', settings.language, currentDetails);
+  if (currentResult) render(currentResult);
+  else if (currentFen) $('castling-rights').textContent = describeCastlingRights(currentFen, settings.language);
+}
+function setStatus(value) {
+  currentStatus = value;
+  $('status').textContent = localizeStatus(value, settings.language);
+}
 function clear() {
   for (const id of ['best-move', 'evaluation', 'depth', 'pv', 'castling-rights']) $(id).textContent = '—';
   $('move-detail').textContent = '';
+  currentResult = null;
+  currentFen = null;
 }
 function stop(destroy = false) {
   currentId = null;
@@ -18,10 +39,12 @@ function stop(destroy = false) {
 }
 function send(message) { port?.postMessage(message); }
 function render(result) {
-  const move = describeMove(result.fen, result.bestMove);
+  currentResult = result;
+  currentFen = result.fen;
+  const move = describeMove(result.fen, result.bestMove, settings.language);
   $('best-move').textContent = move.label;
   $('move-detail').textContent = move.detail;
-  $('castling-rights').textContent = describeCastlingRights(result.fen);
+  $('castling-rights').textContent = describeCastlingRights(result.fen, settings.language);
   $('depth').textContent = result.depth ?? '—';
   $('evaluation').textContent = formatEvaluation(result.score, result.fen.split(' ')[1]);
   $('pv').textContent = formatPrincipalVariation(result.fen, result.pv);
@@ -30,7 +53,8 @@ async function analyze(message) {
   if (!settings.enabled || !Number.isSafeInteger(message.id) || !Object.hasOwn(MODES, message.mode)) return;
   currentId = message.id;
   clear();
-  $('castling-rights').textContent = describeCastlingRights(message.fen);
+  currentFen = message.fen;
+  $('castling-rights').textContent = describeCastlingRights(message.fen, settings.language);
   if (!engine) {
     const instance = new StockfishEngine({
       onInfo: result => { if (engine === instance) send({ type: 'info', id: currentId, result }); },
@@ -60,30 +84,35 @@ window.addEventListener('message', event => {
   port = event.ports[0];
   port.onmessage = ({ data }) => {
     if (data?.type === 'analyze') void analyze(data);
-    if (data?.type === 'stop') { stop(data.destroy === true); $('status').textContent = data.status || 'Đang chờ vị trí…'; }
-    if (data?.type === 'status') { $('status').textContent = data.status; }
+    if (data?.type === 'stop') { stop(data.destroy === true); setStatus(data.status || 'Đang chờ vị trí…'); }
+    if (data?.type === 'status') setStatus(data.status);
     // Only the isolated controller decides which results are still current.
     if (data?.type === 'render' && data.id === currentId && settings.enabled) render(data.result);
     if (data?.type === 'restore' && settings.enabled && Number.isSafeInteger(data.id)) {
       currentId = data.id;
       render(data.result);
     }
-    if (data?.type === 'details') $('details').textContent = data.text;
+    if (data?.type === 'details') {
+      currentDetails = data;
+      $('details').textContent = t('engineDetails', settings.language, data);
+    }
   };
   send({ type: 'ready' });
 });
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local' || (!changes.enabled && !changes.analysisMode)) return;
+  if (area !== 'local' || (!changes.enabled && !changes.analysisMode && !changes.language)) return;
   revision++;
-  for (const key of ['enabled', 'analysisMode']) if (changes[key]) settings[key] = changes[key].newValue;
+  for (const key of ['enabled', 'analysisMode', 'language']) if (changes[key]) settings[key] = changes[key].newValue;
   settings = normalizeSettings(settings);
-  if (!settings.enabled) { stop(true); $('status').textContent = 'OFF'; }
+  if (!settings.enabled) { stop(true); setStatus('OFF'); }
+  renderLanguage();
 });
 const initialRevision = revision;
 try {
   const saved = await chrome.storage.local.get(DEFAULT_SETTINGS);
   if (revision === initialRevision) settings = normalizeSettings(saved);
-} catch { $('status').textContent = 'Không đọc được settings.'; }
+  renderLanguage();
+} catch { setStatus('Không đọc được settings.'); }
 window.addEventListener('pagehide', () => { stop(true); port?.close(); port = null; });
 
 const handle = $('drag-handle');

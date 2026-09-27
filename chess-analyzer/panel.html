@@ -10,18 +10,18 @@
 <body>
   <header>
     <div id="drag-handle" role="button" tabindex="0" aria-label="Di chuyển panel: kéo hoặc dùng phím mũi tên" title="Kéo để di chuyển · Phím mũi tên để dịch chuyển">
-      <span>LOCAL STOCKFISH · ⠿ KÉO ĐỂ DI CHUYỂN</span><h1>Chess Analyzer</h1>
+      <span data-i18n="dragText">LOCAL STOCKFISH · ⠿ KÉO ĐỂ DI CHUYỂN</span><h1>Chess Analyzer</h1>
     </div>
-    <button id="reset-position" type="button" title="Đưa panel về cạnh bàn cờ">Về cạnh bàn cờ</button>
+    <button id="reset-position" type="button" title="Đưa panel về cạnh bàn cờ" data-i18n="resetPosition">Về cạnh bàn cờ</button>
   </header>
   <main>
   <p id="status" role="status">Đang kết nối…</p>
   <dl>
-    <div><dt>Best move</dt><dd id="best-move">—</dd><p id="move-detail" class="hint"></p></div>
-    <div class="metrics"><div><dt>Evaluation · Trắng</dt><dd id="evaluation">—</dd></div><div><dt>Depth</dt><dd id="depth">—</dd></div></div>
-    <div><dt>PV · UCI / nhập thành</dt><dd id="pv">—</dd></div>
-    <div><dt>Quyền nhập thành từ FEN</dt><dd id="castling-rights">—</dd>
-      <p class="hint">O-O: cánh vua · O-O-O: cánh hậu. Còn quyền chưa có nghĩa là nhập thành được ngay: cần đường trống và vua không ở, đi qua hoặc đến ô bị chiếu.</p>
+    <div><dt data-i18n="bestMove">Nước đi tốt nhất</dt><dd id="best-move">—</dd><p id="move-detail" class="hint"></p></div>
+    <div class="metrics"><div><dt data-i18n="evaluation">Đánh giá · Trắng</dt><dd id="evaluation">—</dd></div><div><dt data-i18n="depth">Độ sâu</dt><dd id="depth">—</dd></div></div>
+    <div><dt data-i18n="pv">Biến chính · UCI / nhập thành</dt><dd id="pv">—</dd></div>
+    <div><dt data-i18n="rights">Quyền nhập thành từ FEN</dt><dd id="castling-rights">—</dd>
+      <p class="hint" data-i18n="rightsHint">O-O: cánh vua · O-O-O: cánh hậu. Còn quyền chưa có nghĩa là nhập thành được ngay: cần đường trống và vua không ở, đi qua hoặc đến ô bị chiếu.</p>
     </div>
   </dl>
   <footer id="details">Hash 64 MB · 1 thread</footer>

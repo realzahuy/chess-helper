@@ -5,10 +5,10 @@ Một ON/OFF điều khiển phân tích realtime bằng Stockfish WASM local, g
 ## Cập nhật / cài extension
 
 1. Mở `chrome://extensions`, bật **Developer mode**.
-2. Nếu đã cài bản cũ, nhấn **Reload** trên thẻ Chess Analyzer để nạp bản **0.4.1**. Nếu chưa cài, chọn **Load unpacked** → `D:\prj\chess-helper\chess-analyzer`.
+2. Nếu đã cài bản cũ, nhấn **Reload** trên thẻ Chess Analyzer. Nếu chưa cài, chọn **Load unpacked** rồi chọn thư mục `chess-analyzer` trong repository vừa tải về.
 3. Reload tab Chess.com **một lần** để Chrome inject code mới. Đây chỉ là bước khi cài/cập nhật extension.
 4. Mở Analysis, Computer hoặc ván online trên Chess.com.
-5. Mở popup → bật **ON**, chọn Fast/Strong/Deep. Các lần bật/tắt tiếp theo có hiệu lực ngay, không reload trang.
+5. Mở popup → bật **ON**, chọn Fast/Strong/Deep và **Ngôn ngữ / Language** là Tiếng Việt hoặc English. Các lựa chọn có hiệu lực ngay, không reload trang.
 
 Khi đọc được FEN đầy đủ và khớp board, panel hiển thị depth/eval/PV trong lúc engine nghĩ, sau đó vẽ mũi tên trực tiếp trên bàn cờ của trang. Khi không đọc được state, panel nêu lý do và không gửi vị trí phỏng đoán cho Stockfish.
 
@@ -47,7 +47,7 @@ Content script không thể đọc trực tiếp biến JS của trang từ isol
 
 Worker chạy trong `panel.html` thuộc origin `chrome-extension://…`, tránh lỗi cross-origin khi tạo Worker từ origin Chess.com. Content script kết nối bằng MessageChannel, kiểm tra request/generation và FEN trước khi render.
 
-`chrome.storage.local` chỉ ghi `enabled` và `analysisMode`. FEN, eval, PV và kết quả đang hiển thị chỉ tồn tại trong RAM; không có file trung gian, database, backend, REST API hoặc lịch sử. Giữ tối đa kết quả vị trí hiện tại để không chạy lại chỉ vì board được dựng lại hoặc lật. OFF xóa dữ liệu đó.
+`chrome.storage.local` chỉ ghi `enabled`, `analysisMode` và `language` (`vi` hoặc `en`). Chọn ngôn ngữ trong popup sẽ đổi ngay các nhãn và kết quả đang hiển thị ở panel, không chạy lại Stockfish. FEN, eval, PV và kết quả đang hiển thị chỉ tồn tại trong RAM; không có file trung gian, database, backend, REST API hoặc lịch sử. Giữ tối đa kết quả vị trí hiện tại để không chạy lại chỉ vì board được dựng lại hoặc lật. OFF xóa dữ liệu đó.
 
 ## Các bước và file
 
@@ -192,7 +192,7 @@ reader.getFen(board);
 Trong DevTools của popup (chuột phải popup → Inspect):
 
 ```js
-await chrome.storage.local.get(null); // chỉ enabled, analysisMode
+await chrome.storage.local.get(null); // chỉ enabled, analysisMode, language nếu đã chọn
 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 await chrome.tabs.sendMessage(tab.id, { type: 'ANALYZER_PING' });
 ```
