@@ -1,0 +1,14 @@
+#local-chess-analyzer-panel {
+  position: fixed; top: 16px; right: 16px; width: 300px;
+  max-width: calc(100vw - 24px); height: 490px; max-height: calc(100vh - 24px);
+  border: 1px solid #415066; border-radius: 14px;
+  box-shadow: 0 8px 30px #0005; z-index: 2147483645;
+  background: #101722; color-scheme: dark;
+}
+.chess-analyzer-overlay-host {
+  position: absolute; pointer-events: none !important; z-index: 2147483644;
+}
+.chess-analyzer-overlay-host .move-overlay {
+  position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+}
+.chess-analyzer-overlay-host * { pointer-events: none !important; }

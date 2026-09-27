@@ -1,0 +1,12 @@
+# Local development dependencies and generated output
+/node_modules/
+/.cache/
+/test-results/
+/playwright-report/
+/SOURCE.md
+
+# Development tools and tests; the extension runs without them
+/package.json
+/package-lock.json
+/scripts/
+/tests/

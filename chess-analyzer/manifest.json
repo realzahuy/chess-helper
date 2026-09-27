@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Chess Analyzer — Local Stockfish",
+  "version": "0.4.1",
+  "description": "Phân tích realtime bàn cờ Chess.com, kể cả ván online đang diễn ra, bằng Stockfish WASM local.",
+  "minimum_chrome_version": "120",
+  "permissions": ["storage"],
+  "cross_origin_embedder_policy": { "value": "require-corp" },
+  "action": {
+    "default_title": "Chess Analyzer",
+    "default_popup": "popup/popup.html"
+  },
+  "content_scripts": [{
+    "matches": ["https://www.chess.com/*"],
+    "js": ["board-reader.js", "page-bridge.js"],
+    "world": "MAIN",
+    "run_at": "document_idle"
+  }, {
+    "matches": ["https://www.chess.com/*"],
+    "js": ["content.js"],
+    "world": "ISOLATED",
+    "css": ["content.css"],
+    "run_at": "document_idle"
+  }],
+  "web_accessible_resources": [{
+    "resources": ["panel.html", "overlay.js", "utils.js", "board-reader.js"],
+    "matches": ["https://www.chess.com/*"]
+  }],
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none';"
+  }
+}

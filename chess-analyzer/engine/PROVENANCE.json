@@ -1,0 +1,13 @@
+{
+  "package": "stockfish",
+  "version": "18.0.8",
+  "variant": "lite-single",
+  "source": "https://registry.npmjs.org/stockfish/-/stockfish-18.0.8.tgz",
+  "repository": "https://github.com/nmrugg/stockfish.js",
+  "integrity": "sha512-z+f2UMPXLylDBGjv9e9zU8QulY7hUl8MYHesLRrdddewlOXjJrUSmtNmbtID1/F72EPhq0CCkCNxgWS5MQVWtQ==",
+  "sha256": {
+    "stockfish.js": "5243fd9b276cab7dfe3ad1d43ab9ead73568fac76468c614242977a210c4a391",
+    "stockfish.wasm": "a8fbc05ec6920b56d7485826dcb02c5ffd2826bcbf751cf973046f237a9096f1",
+    "COPYING.txt": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b"
+  }
+}
